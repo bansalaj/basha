@@ -1,43 +1,43 @@
 #include "AzureClientWrapper.h"
-#include <AzureIoTProtocol_MQTT.h>
-#include <AzureIoTUtility.h>
-#include <AzureIoTHub.h>
-#include <Arduino.h>
+#include <az_core.h>
+#include <az_iot_hub_client.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>  // For MQTT
 
+
+// Define your WiFiClientSecure
+WiFiClientSecure wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+// Azure IoT Hub client
+az_iot_hub_client iotHubClient;
 // Ensure the correct type for the MQTT protocol
-extern "C" IOTHUB_CLIENT_TRANSPORT_PROVIDER MQTT_Protocol;
 
-AzureClientWrapper::AzureClientWrapper(const char* connectionString)
-    : connectionString(connectionString) {
-    
-    iotHubClientHandle = IoTHubClient_LL_CreateFromConnectionString(connectionString, MQTT_Protocol);
-    if (iotHubClientHandle == NULL) {
-        Serial.println("Failed to create IoT Hub client handle");
-        //while (1);
-    }
+// Initialize the AzureClientWrapper with connectionString
+AzureClientWrapper::AzureClientWrapper(const char* connectionString) {
+    this->connectionString = connectionString;
+    az_iot_hub_client_init(&iotHubClient, az_span_create_from_str("IOT_HUB_HOSTNAME"), az_span_create_from_str("DEVICE_ID"), NULL);
 }
 
 void AzureClientWrapper::connectToAzure() {
-    if (iotHubClientHandle != NULL) {
-        IoTHubClient_LL_DoWork(iotHubClientHandle);
-        delay(100);
+    Serial.println("Connecting to Azure IoT Hub...");
+
+    mqttClient.setServer("IOT_HUB_HOSTNAME", 8883);
+
+    if (mqttClient.connect("DEVICE_ID", "SAS_TOKEN", "")) {
+        Serial.println("Connected to Azure IoT Hub!");
+    } else {
+        Serial.println("Connection to Azure IoT Hub failed!");
     }
 }
 
 void AzureClientWrapper::sendMessage(const char* message) {
-    if (iotHubClientHandle != NULL) {
-        IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(message);
-        if (messageHandle == NULL) {
-            Serial.println("Failed to create message handle");
-            //while (1);
-        }
+    // Topic for sending telemetry to IoT Hub
+    const char* telemetry_topic = "devices/your-device-id/messages/events/";
 
-        if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messageHandle, NULL, NULL) != IOTHUB_CLIENT_OK) {
-            Serial.println("Failed to send message to Azure IoT Hub");
-        } else {
-            Serial.println("Message sent to Azure IoT Hub");
-        }
-
-        IoTHubMessage_Destroy(messageHandle);
+    if (mqttClient.publish(telemetry_topic, message)) {
+        Serial.println("Message sent successfully");
+    } else {
+        Serial.println("Failed to send message");
     }
 }
