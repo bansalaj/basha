@@ -1,6 +1,11 @@
 #include "WifiManagerWrapper.h"
 #include <Arduino.h>
 
+// Wi-Fi credentials
+const char* WIFI_SSID = "<YOUR_WIFI_SSID>";
+const char* WIFI_PASSWORD = "<YOUR_WIFI_PASSWORD>";
+
+
 WiFiManagerWrapper::WiFiManagerWrapper() {
     // Serial.begin(115200);
     // delay(1000);
@@ -9,12 +14,10 @@ WiFiManagerWrapper::WiFiManagerWrapper() {
 void WiFiManagerWrapper::connectToWiFi() {
     Serial.println("Connecting to WiFi...");
 
-    if (!wifiManager.autoConnect("ESP32_AP")) {
-        Serial.println("Failed to connect to WiFi and hit timeout");
-        delay(3000);
-        ESP.restart();
-        delay(5000);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
     }
-
-    Serial.println("Connected to WiFi");
+    Serial.println("\nConnected to Wi-Fi.");
 }

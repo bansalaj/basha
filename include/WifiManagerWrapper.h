@@ -1,7 +1,7 @@
 #ifndef WIFIMANAGERWRAPPER_H
 #define WIFIMANAGERWRAPPER_H
 
-#include <WiFiManager.h>
+#include <WiFi.h>
 
 class WiFiManagerWrapper {
 public:
